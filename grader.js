@@ -26,6 +26,11 @@ var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+var tempfile="temp.html";
+var URL_DEFAULT="http://pure-caverns-6633.herokuapp.com/";
+var rest = require('./restler');
+
+
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -35,6 +40,22 @@ var assertFileExists = function(infile) {
     }
     return instr;
 };
+
+
+var urlReader=function(url){
+    var tempo="yes";
+	rest.get(url).on('complete',function(data, response){
+   if (response.statusCode == 200) {
+     fs.writeFileSync(tempfile, data);
+     program.file=tempfile;   
+  } else{
+     console.log("Url is not reponding");
+     process.exit(1);  
+     tempo="no" ; 
+	}  
+  });
+return tempo; 
+ };
 
 var cheerioHtmlFile = function(htmlfile) {
     return cheerio.load(fs.readFileSync(htmlfile));
@@ -65,10 +86,16 @@ if(require.main == module) {
     program
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
+		.option('-u, --url <check_url>', 'Url to webpage', clone(urlReader), URL_DEFAULT)	
         .parse(process.argv);
+ 
+    if(program.url=="yes"){   
+     program.file=tempfile;
+    }   
     var checkJson = checkHtmlFile(program.file, program.checks);
     var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
+   
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
